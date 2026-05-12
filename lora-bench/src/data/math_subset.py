@@ -42,6 +42,12 @@ def load_math_subset_for_sft(cfg: dict, tokenizer, with_eval: bool = False):
 
     if with_eval and dcfg.get("eval_holdout"):
         k = min(dcfg["eval_holdout"], len(raw) // 10)
+        if k == 0:
+            fmt = raw.map(
+                lambda ex: format_math_sft(ex, tokenizer),
+                remove_columns=raw.column_names, desc="Formatting MATH",
+            )
+            return fmt, None
         train_part = raw.select(range(len(raw) - k))
         eval_part = raw.select(range(len(raw) - k, len(raw)))
         train_fmt = train_part.map(

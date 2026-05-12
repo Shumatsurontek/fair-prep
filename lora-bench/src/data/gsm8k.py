@@ -35,6 +35,13 @@ def load_gsm8k_for_sft(cfg: dict, tokenizer, with_eval: bool = False):
 
     if with_eval and dcfg.get("eval_holdout"):
         k = min(dcfg["eval_holdout"], len(raw) // 10)
+        if k == 0:
+            # Dataset too small to carve a holdout; train-only.
+            fmt = raw.map(
+                lambda ex: format_qwen_chat_sft(ex, tokenizer),
+                remove_columns=raw.column_names, desc="Formatting SFT",
+            )
+            return fmt, None
         train_part = raw.select(range(len(raw) - k))
         eval_part = raw.select(range(len(raw) - k, len(raw)))
         train_fmt = train_part.map(
