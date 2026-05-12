@@ -43,19 +43,22 @@ if [[ "$IS_COLAB" == "1" ]]; then
     echo "[setup] installing core deps into Colab system Python (preserves torch+CUDA)"
     # Pin to versions compatible with Colab's torch 2.10.x.
     # transformers >=5.x / trl >=1.x require torch >= 2.11 (cpp ext skipped otherwise).
+    # Tested combo on Colab torch 2.10 + cu128
+    uv pip install --system --force-reinstall \
+        "transformers==4.46.3" \
+        "trl==0.11.4" \
+        "peft==0.13.2" \
+        "accelerate==1.0.1"
     uv pip install --system \
-        "transformers>=4.45,<5" \
-        "trl>=0.11,<1" \
-        "peft>=0.13,<0.18" \
         "datasets>=3.0" \
-        "accelerate>=1.0" \
         "safetensors>=0.4" \
         "scipy>=1.13" \
         "scikit-learn>=1.5" \
         "typer>=0.12" \
         "rich>=13" \
         "pyyaml>=6" \
-        "tqdm>=4.66"
+        "tqdm>=4.66" \
+        "math_verify"
 else
     echo "[setup] installing project deps via uv sync"
     uv sync --no-dev
