@@ -290,13 +290,16 @@ def transfer(
     calib: str = typer.Option(..., "--calib", "-C", help="jsonl prompts for activation calib"),
     out: str = typer.Option(..., "--out", "-o"),
     device: str = typer.Option("cuda", "--device", "-d"),
-    n_calib: int = typer.Option(256, "--n-calib", "-n"),
+    n_calib: int = typer.Option(64, "--n-calib", "-n"),
+    max_length: int = typer.Option(128, "--max-length", "-L"),
+    batch_size: int = typer.Option(2, "--batch-size", "-B"),
     ridge: float = typer.Option(1e-4, "--ridge"),
 ):
     """Project teacher LoRA into student hidden space (OLS + recon error)."""
     from ..transfer.cross_lora import transfer_adapter
     errs = transfer_adapter(teacher, student, adapter, calib, out,
-                            device=device, n_calib=n_calib, ridge=ridge)
+                            device=device, n_calib=n_calib, ridge=ridge,
+                            max_length=max_length, batch_size=batch_size)
     mean = sum(errs.values()) / max(len(errs), 1)
     t = Table(title="transfer recon error", border_style="green")
     t.add_column("module", style="cyan")

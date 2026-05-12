@@ -96,9 +96,10 @@ def transfer_adapter(
     calib_path: str,
     out_dir: str,
     device: str = "cuda",
-    n_calib: int = 256,
+    n_calib: int = 64,
     ridge: float = 1e-4,
-    max_length: int = 256,
+    max_length: int = 128,
+    batch_size: int = 2,
 ) -> dict:
     """End-to-end transfer. Returns dict of per-module recon errors."""
     out_p = Path(out_dir)
@@ -138,7 +139,7 @@ def transfer_adapter(
     target_names_s = [n for n in target_names_s_all
                       if _layer_idx(n) is not None and _layer_idx(n) < L_s]
     acts_s_raw = collect_activations(student, tok_s, prompts, target_names_s, device,
-                                     max_length=max_length)
+                                     max_length=max_length, batch_size=batch_size)
     del student
     if device == "cuda":
         torch.cuda.empty_cache()
@@ -152,7 +153,7 @@ def transfer_adapter(
     target_names_t = [n for n in target_names_t_all if _layer_idx(n) in teacher_layers_used]
     print(f"[hooks] teacher={len(target_names_t)}  student={len(target_names_s)}")
     acts_t_raw = collect_activations(teacher_peft, tok_t, prompts, target_names_t, device,
-                                     max_length=max_length)
+                                     max_length=max_length, batch_size=batch_size)
     lora_weights = {}
     for n, m in teacher_peft.named_modules():
         if hasattr(m, "lora_A") and _module_leaf(n) in target_modules:
