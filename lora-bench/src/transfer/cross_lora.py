@@ -62,12 +62,31 @@ def load_calib_prompts(path: str | Path, n: int = 256) -> list[str]:
     return out
 
 
+_LAYER_RE = __import__("re").compile(r"\.layers\.(\d+)\.")
+
+
 def _peft_target_names(model, target_modules: list[str]) -> list[str]:
     names = []
     for n, _ in model.named_modules():
         if n.split(".")[-1] in target_modules:
             names.append(n)
     return names
+
+
+def _layer_idx(name: str) -> int | None:
+    m = _LAYER_RE.search(name)
+    return int(m.group(1)) if m else None
+
+
+def _module_leaf(name: str) -> str:
+    return name.split(".")[-1]
+
+
+def _build_layer_map(n_student: int, n_teacher: int) -> dict[int, int]:
+    """Linear stride: student layer j → teacher layer round(j · (L_t-1)/(L_s-1))."""
+    if n_student <= 1:
+        return {0: 0}
+    return {j: round(j * (n_teacher - 1) / (n_student - 1)) for j in range(n_student)}
 
 
 def transfer_adapter(
@@ -79,6 +98,7 @@ def transfer_adapter(
     device: str = "cuda",
     n_calib: int = 256,
     ridge: float = 1e-4,
+    max_length: int = 256,
 ) -> dict:
     """End-to-end transfer. Returns dict of per-module recon errors."""
     out_p = Path(out_dir)
@@ -95,15 +115,45 @@ def transfer_adapter(
 
     prompts = load_calib_prompts(calib_path, n_calib)
 
+    # Load student first to read its config (layer count) cheaply.
+    student = AutoModelForCausalLM.from_pretrained(
+        student_name, trust_remote_code=True, dtype=torch.bfloat16
+    ).to(device)
+    L_s = student.config.num_hidden_layers
+
+    teacher_cfg_only = AutoModelForCausalLM.from_pretrained(
+        teacher_name, trust_remote_code=True, dtype=torch.bfloat16
+    )
+    L_t = teacher_cfg_only.config.num_hidden_layers
+    del teacher_cfg_only
+
+    layer_map = _build_layer_map(L_s, L_t)
+    teacher_layers_used = set(layer_map.values())
+    print(f"[layer-map] student L={L_s} → teacher L={L_t}  ({len(teacher_layers_used)} unique teacher layers)")
+
+    # Collect student activations first (smaller model, less memory pressure).
+    target_names_s_all = _peft_target_names(student, target_modules)
+    target_names_s = [n for n in target_names_s_all
+                      if _layer_idx(n) is not None and _layer_idx(n) < L_s]
+    acts_s_raw = collect_activations(student, tok_s, prompts, target_names_s, device,
+                                     max_length=max_length)
+    del student
+    if device == "cuda":
+        torch.cuda.empty_cache()
+
     teacher = AutoModelForCausalLM.from_pretrained(
         teacher_name, trust_remote_code=True, dtype=torch.bfloat16
     ).to(device)
     teacher_peft = PeftModel.from_pretrained(teacher, adapter_path)
-    target_names_t = _peft_target_names(teacher, target_modules)
-    acts_t = collect_activations(teacher_peft, tok_t, prompts, target_names_t, device)
+    # Only hook teacher layers we actually need.
+    target_names_t_all = _peft_target_names(teacher_peft, target_modules)
+    target_names_t = [n for n in target_names_t_all if _layer_idx(n) in teacher_layers_used]
+    print(f"[hooks] teacher={len(target_names_t)}  student={len(target_names_s)}")
+    acts_t_raw = collect_activations(teacher_peft, tok_t, prompts, target_names_t, device,
+                                     max_length=max_length)
     lora_weights = {}
     for n, m in teacher_peft.named_modules():
-        if hasattr(m, "lora_A") and n.split(".")[-1] in target_modules:
+        if hasattr(m, "lora_A") and _module_leaf(n) in target_modules:
             A = m.lora_A["default"].weight.detach().to("cpu", torch.float32)
             B = m.lora_B["default"].weight.detach().to("cpu", torch.float32)
             base_name = n.replace("base_model.model.", "")
@@ -112,34 +162,40 @@ def transfer_adapter(
     if device == "cuda":
         torch.cuda.empty_cache()
 
-    student = AutoModelForCausalLM.from_pretrained(
-        student_name, trust_remote_code=True, dtype=torch.bfloat16
-    ).to(device)
-    target_names_s = _peft_target_names(student, target_modules)
-    acts_s = collect_activations(student, tok_s, prompts, target_names_s, device)
-    del student
-    if device == "cuda":
-        torch.cuda.empty_cache()
-
     def _strip(n: str) -> str:
         return n.replace("base_model.model.", "")
-    acts_t = {_strip(k): v for k, v in acts_t.items()}
-    acts_s = {_strip(k): v for k, v in acts_s.items()}
+    acts_t = {_strip(k): v for k, v in acts_t_raw.items()}
+    acts_s = {_strip(k): v for k, v in acts_s_raw.items()}
 
+    # Pair student modules to teacher modules via layer_map + leaf name.
+    # Student name = "model.layers.{j}.<...>.<leaf>".  Map to teacher_i = layer_map[j].
     errs: dict[str, float] = {}
     out_state: dict[str, torch.Tensor] = {}
-    for name, (A_t, B_t) in lora_weights.items():
-        if name not in acts_s or name not in acts_t:
+    for s_name in acts_s:
+        j = _layer_idx(s_name)
+        leaf = _module_leaf(s_name)
+        if j is None or j not in layer_map:
             continue
-        X_t, Y_t = acts_t[name]
-        X_s, Y_s = acts_s[name]
+        i = layer_map[j]
+        # Find teacher key matching layer i + same leaf
+        t_name = next((tn for tn in acts_t
+                       if _layer_idx(tn) == i and _module_leaf(tn) == leaf), None)
+        if t_name is None or t_name not in lora_weights:
+            continue
+        A_t, B_t = lora_weights[t_name]
+        X_t, Y_t = acts_t[t_name]
+        X_s, Y_s = acts_s[s_name]
         n = min(X_t.shape[0], X_s.shape[0])
+        # Upcast to fp32 for OLS solve.
         A_s, B_s, err = project_lora_module(
-            A_t, B_t, X_t[:n], X_s[:n], Y_t[:n], Y_s[:n], ridge=ridge
+            A_t.float(), B_t.float(),
+            X_t[:n].float(), X_s[:n].float(),
+            Y_t[:n].float(), Y_s[:n].float(),
+            ridge=ridge,
         )
-        errs[name] = err
-        out_state[f"base_model.model.{name}.lora_A.weight"] = A_s.contiguous()
-        out_state[f"base_model.model.{name}.lora_B.weight"] = B_s.contiguous()
+        errs[s_name] = err
+        out_state[f"base_model.model.{s_name}.lora_A.weight"] = A_s.contiguous()
+        out_state[f"base_model.model.{s_name}.lora_B.weight"] = B_s.contiguous()
 
     save_file(out_state, str(out_p / "adapter_model.safetensors"))
     LoraConfig(

@@ -15,8 +15,8 @@ Modèle base : `Qwen/Qwen3-0.6B`
 ## Gain absolu vs baseline
 
 - SFT-LoRA : **+0.1200** (+12.0 pts)
-- SFT+DPO  : **+0.1500** (+15.0 pts)
-- SFT+GTW  : **+0.1500** (+15.0 pts)
+- SFT+DPO : **+0.1500** (+15.0 pts)
+- SFT+GTW : **+0.1500** (+15.0 pts)
 
 ## Exemples de sorties
 
@@ -188,14 +188,14 @@ The answer is: #### 120000
 
 ## MATH-500 (OOD bench)
 
-Dataset: `HuggingFaceH4/MATH-500`. Bench OOD vs GSM8K (H1 du papier).
+Dataset: `HuggingFaceH4/MATH-500`.
 
 | Étape | Accuracy [95% Wilson CI] | Tokens/s | Peak Mem (MB) | Wall (s) | N samples |
 |-------|--------------------------|----------|---------------|----------|-----------|
 | Baseline | 0.180 [0.149, 0.216] | 39.5 | 1137 | 9715.6 | 500 |
 | SFT-LoRA | 0.226 [0.192, 0.265] | 27.4 | 1178 | 6411.5 | 500 |
 | SFT+DPO | 0.264 [0.227, 0.304] | 27.4 | 1178 | 6743.1 | 500 |
-| SFT+GTW | 0.265 [0.209, 0.330] | 23.7 | 1178 | 3188.1 | 200 |
+| SFT+GTW | 0.234 [0.199, 0.273] | 22.4 | 1178 | 8534.2 | 500 |
 
 ### Catégorisation erreurs MATH-500
 
@@ -204,4 +204,4 @@ Dataset: `HuggingFaceH4/MATH-500`. Bench OOD vs GSM8K (H1 du papier).
 | Baseline | 90 (18%) | 3 (1%) | 2 (0%) | 108 (22%) | 297 (59%) |
 | SFT-LoRA | 113 (23%) | 2 (0%) | 7 (1%) | 71 (14%) | 307 (61%) |
 | SFT+DPO | 132 (26%) | 2 (0%) | 8 (2%) | 69 (14%) | 289 (58%) |
-| SFT+GTW | 2 (40%) | 2 (40%) | 0 (0%) | 0 (0%) | 1 (20%) |
+| SFT+GTW | 117 (23%) | 2 (0%) | 6 (1%) | 76 (15%) | 299 (60%) |

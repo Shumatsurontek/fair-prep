@@ -18,8 +18,10 @@ class ActivationStore:
     outputs: dict[str, list[torch.Tensor]] = field(default_factory=dict)
 
     def add(self, name: str, x: torch.Tensor, y: torch.Tensor) -> None:
-        self.inputs.setdefault(name, []).append(x.detach().to("cpu", torch.float32))
-        self.outputs.setdefault(name, []).append(y.detach().to("cpu", torch.float32))
+        # Keep activations in their native dtype (typically bf16) on CPU to
+        # bound RAM; OLS solver upcasts to fp32 locally per module.
+        self.inputs.setdefault(name, []).append(x.detach().to("cpu"))
+        self.outputs.setdefault(name, []).append(y.detach().to("cpu"))
 
     def stack(self) -> dict[str, tuple[torch.Tensor, torch.Tensor]]:
         return {n: (torch.cat(self.inputs[n], dim=0), torch.cat(self.outputs[n], dim=0))

@@ -109,6 +109,30 @@ fair-prep/
 ### Merging scaling law
 `src/scaling_law.py` — fits `L(k) = L∞ + A/(k+b)` (Theorem 3.1 of arXiv:2509.24244) and the size-dependent variant `L∞(N) = L* + B·N^-β`, `A(N) = A0·N^-γ`. Three-point fit suffices per the paper.
 
+## Colab / cloud GPU
+
+Mac MPS is memory-bound for Qwen3-4B activations. Use Colab T4/A100 for cross-size transfer + scaling-law sweeps.
+
+```python
+# In a Colab cell:
+!bash <(curl -sL https://raw.githubusercontent.com/Shumatsurontek/fair-prep/main/colab/setup.sh)
+%cd /content/fair-prep/lora-bench
+!./lb status
+```
+
+Or open [`colab/fair_prep_colab.ipynb`](colab/fair_prep_colab.ipynb) directly. Setup script installs uv → core deps → unsloth (CUDA-detected).
+
+**VS Code workflow**: install the *Google Colab* extension, open `colab/fair_prep_colab.ipynb`, pick a Colab kernel (T4/A100). All `lb` commands run remotely on Colab GPU; results sync back to local repo.
+
+### Unsloth fast path
+
+```bash
+./lb train sft -M qwen3-0.6b --fast        # 2-4× faster, 50-70% less VRAM
+./lb train sft -M qwen3-0.6b --fast --no-4bit
+```
+
+Auto-falls back to TRL `SFTTrainer` if unsloth not installed or no CUDA.
+
 ## Stack
 
 - Python 3.11–3.12

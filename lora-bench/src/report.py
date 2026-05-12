@@ -85,11 +85,11 @@ def build_report(results_dir: Path | str = "results") -> Path:
             lines.append(s["output"])
             lines.append("```\n")
 
-    math_rows = [(tag, _load(base / fn)) for tag, fn in [
-        ("Baseline", "math500_baseline.json"),
-        ("SFT-LoRA", "math500_sft.json"),
-        ("SFT+DPO", "math500_dpo.json"),
-        ("SFT+GTW", "math500_gtw.json"),
+    math_rows = [(tag, _load(base / f"{stem}_n500.json") or _load(base / f"{stem}.json")) for tag, stem in [
+        ("Baseline", "math500_baseline"),
+        ("SFT-LoRA", "math500_sft"),
+        ("SFT+DPO", "math500_dpo"),
+        ("SFT+GTW", "math500_gtw"),
     ]]
 
     if any(d for _, d in math_rows):

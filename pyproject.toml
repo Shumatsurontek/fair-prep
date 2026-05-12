@@ -27,6 +27,11 @@ dependencies = [
 cuda = [
     "bitsandbytes>=0.44.0",
 ]
+colab = [
+    "bitsandbytes>=0.44.0",
+    "xformers<0.0.27",
+    # unsloth installed separately via colab/setup.sh (git + extras keyed to CUDA/torch).
+]
 dev = [
     "ruff>=0.6",
     "ipykernel>=6.29",

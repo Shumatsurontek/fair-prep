@@ -121,10 +121,23 @@ def train_sft(
     lora_r: Optional[int] = typer.Option(None, "--lora-r", help="override LoRA rank"),
     max_steps: int = typer.Option(-1, "--max-steps", "-s"),
     max_train_samples: Optional[int] = typer.Option(None, "--max-train-samples", "-n"),
+    fast: bool = typer.Option(False, "--fast",
+                              help="use unsloth FastLanguageModel (CUDA, 2-4× faster)"),
+    no_4bit: bool = typer.Option(False, "--no-4bit",
+                                 help="(unsloth only) disable 4-bit quant"),
 ):
     """Supervised fine-tuning."""
-    from ..trainers import sft as sft_trainer
     dev, c = _init(cfg, base_cfg, device, model=model, lora_r=lora_r)
+    if fast:
+        try:
+            from ..trainers import sft_unsloth
+            sft_unsloth.run(c, dev, max_steps=max_steps,
+                            max_train_samples=max_train_samples,
+                            load_in_4bit=not no_4bit)
+            return
+        except (ImportError, RuntimeError) as e:
+            err_console.print(f"[--fast] unsloth unavailable: {e}\nfalling back to TRL SFTTrainer.")
+    from ..trainers import sft as sft_trainer
     sft_trainer.run(c, dev, max_steps=max_steps, max_train_samples=max_train_samples)
 
 
