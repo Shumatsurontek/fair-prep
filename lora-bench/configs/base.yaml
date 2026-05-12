@@ -2,7 +2,7 @@
 model:
   name: "Qwen/Qwen3-0.6B"
   trust_remote_code: true
-  attn_implementation: "eager"   # MPS: flash-attn / sdpa-flash unsupported
+  attn_implementation: "sdpa"    # CUDA: sdpa-flash (~2× faster).  MPS users override → eager
   dtype_cuda: "bfloat16"
   dtype_mps: "float16"
   dtype_cpu: "float32"

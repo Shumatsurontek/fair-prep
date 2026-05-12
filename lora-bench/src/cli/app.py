@@ -183,7 +183,8 @@ def train_gtw(
 
 # ──────────────────────────── eval ────────────────────────────
 
-def _run_eval(dataset_name, cfg, base_cfg, device, adapter, max_samples, max_new_tokens, out, model=None):
+def _run_eval(dataset_name, cfg, base_cfg, device, adapter, max_samples, max_new_tokens, out,
+              model=None, batch_size=8):
     from ..core.model import load_base_model, load_model_with_lora, load_tokenizer
     from ..core.utils import ensure_dir, log_env, save_json
     from ..eval import gsm8k as e_gsm8k, math500 as e_math500
@@ -195,8 +196,9 @@ def _run_eval(dataset_name, cfg, base_cfg, device, adapter, max_samples, max_new
     model = (load_model_with_lora(c, dev, adapter_path=adapter)
              if adapter else load_base_model(c, dev))
     eval_ds = ds_mod.load_dataset(c, tok, max_samples=max_samples)
-    console.print(f"[dim]n_samples = {len(eval_ds)}[/]")
-    metrics = run_eval(model, tok, eval_ds, dev, score_fn=ds_mod.score, max_new_tokens=max_new_tokens)
+    console.print(f"[dim]n_samples = {len(eval_ds)}  batch_size = {batch_size}[/]")
+    metrics = run_eval(model, tok, eval_ds, dev, score_fn=ds_mod.score,
+                      max_new_tokens=max_new_tokens, batch_size=batch_size)
     metrics["env"] = log_env(dev)
     metrics["adapter"] = adapter
     metrics["task"] = dataset_name
@@ -215,11 +217,13 @@ def eval_gsm8k(
     model: Optional[str] = typer.Option(None, "--model", "-M"),
     adapter: Optional[str] = typer.Option(None, "--adapter", "-a"),
     max_samples: Optional[int] = typer.Option(None, "--max-samples", "-n"),
-    max_new_tokens: int = typer.Option(512, "--max-new-tokens"),
+    max_new_tokens: int = typer.Option(256, "--max-new-tokens"),
+    batch_size: int = typer.Option(8, "--batch-size", "-B"),
     out: Optional[str] = typer.Option(None, "--out", "-o"),
 ):
     """GSM8K (greedy + exact-match)."""
-    _run_eval("gsm8k", cfg, base_cfg, device, adapter, max_samples, max_new_tokens, out, model)
+    _run_eval("gsm8k", cfg, base_cfg, device, adapter, max_samples, max_new_tokens, out,
+              model, batch_size)
 
 
 @eval_app.command("math500")
@@ -230,11 +234,13 @@ def eval_math500(
     model: Optional[str] = typer.Option(None, "--model", "-M"),
     adapter: Optional[str] = typer.Option(None, "--adapter", "-a"),
     max_samples: Optional[int] = typer.Option(None, "--max-samples", "-n"),
-    max_new_tokens: int = typer.Option(768, "--max-new-tokens"),
+    max_new_tokens: int = typer.Option(512, "--max-new-tokens"),
+    batch_size: int = typer.Option(8, "--batch-size", "-B"),
     out: Optional[str] = typer.Option(None, "--out", "-o"),
 ):
     """MATH-500 (greedy + math_verify on boxed answer)."""
-    _run_eval("math500", cfg, base_cfg, device, adapter, max_samples, max_new_tokens, out, model)
+    _run_eval("math500", cfg, base_cfg, device, adapter, max_samples, max_new_tokens, out,
+              model, batch_size)
 
 
 # ──────────────────────────── infer ────────────────────────────
