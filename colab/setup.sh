@@ -40,25 +40,35 @@ fi
 echo "[setup] colab=$IS_COLAB"
 
 if [[ "$IS_COLAB" == "1" ]]; then
-    echo "[setup] installing core deps into Colab system Python (preserves torch+CUDA)"
-    # Pin to versions compatible with Colab's torch 2.10.x.
-    # transformers >=5.x / trl >=1.x require torch >= 2.11 (cpp ext skipped otherwise).
-    # Tested combo on Colab torch 2.10 + cu128
-    uv pip install --system --force-reinstall \
-        "transformers==4.46.3" \
-        "trl==0.11.4" \
-        "peft==0.13.2" \
-        "accelerate==1.0.1"
+    echo "[setup] surgical install on Colab — never reinstall torch/torchvision/cuda*"
+
+    # Lightweight pure-Python additions — always safe, no CUDA deps.
     uv pip install --system \
-        "datasets>=3.0" \
-        "safetensors>=0.4" \
-        "scipy>=1.13" \
-        "scikit-learn>=1.5" \
-        "typer>=0.12" \
-        "rich>=13" \
-        "pyyaml>=6" \
-        "tqdm>=4.66" \
-        "math_verify"
+        "typer>=0.12" "rich>=13" "safetensors>=0.4" \
+        "scipy>=1.13" "scikit-learn>=1.5" "math_verify" \
+        "pyyaml>=6" "tqdm>=4.66"
+
+    # Heavy deps: only install if absent. Colab ships transformers/datasets/accelerate.
+    for pkg in "transformers:transformers>=4.45" \
+               "datasets:datasets>=3.0" \
+               "accelerate:accelerate>=1.0" \
+               "peft:peft>=0.13" \
+               "trl:trl>=0.11"; do
+        mod="${pkg%%:*}"; spec="${pkg#*:}"
+        if ! python -c "import $mod" 2>/dev/null; then
+            echo "[setup] $mod missing → install $spec"
+            uv pip install --system "$spec"
+        else
+            echo "[setup] $mod present, skip"
+        fi
+    done
+
+    # Fallback: if existing trl/transformers combo is broken, pin known-good
+    # without --force-reinstall (which pulls cuda-bindings 13.x).
+    if ! python -c "from trl import SFTTrainer, DPOTrainer" 2>/dev/null; then
+        echo "[setup] trl/transformers combo broken — installing pinned combo (no --force)"
+        uv pip install --system "transformers>=4.45,<4.50" "trl>=0.11,<0.13" "peft>=0.13,<0.14"
+    fi
 else
     echo "[setup] installing project deps via uv sync"
     uv sync --no-dev

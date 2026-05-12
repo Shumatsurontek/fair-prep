@@ -217,7 +217,7 @@ def eval_gsm8k(
     model: Optional[str] = typer.Option(None, "--model", "-M"),
     adapter: Optional[str] = typer.Option(None, "--adapter", "-a"),
     max_samples: Optional[int] = typer.Option(None, "--max-samples", "-n"),
-    max_new_tokens: int = typer.Option(256, "--max-new-tokens"),
+    max_new_tokens: int = typer.Option(512, "--max-new-tokens"),
     batch_size: int = typer.Option(8, "--batch-size", "-B"),
     out: Optional[str] = typer.Option(None, "--out", "-o"),
 ):
