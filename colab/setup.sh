@@ -40,34 +40,61 @@ fi
 echo "[setup] colab=$IS_COLAB"
 
 if [[ "$IS_COLAB" == "1" ]]; then
-    echo "[setup] surgical install on Colab — never reinstall torch/torchvision/cuda*"
+    echo "[setup] surgical install on Colab — never touch torch/torchvision/cuda*"
 
-    # Lightweight pure-Python additions — always safe, no CUDA deps.
+    # Lightweight pure-Python adds — always safe.
     uv pip install --system \
         "typer>=0.12" "rich>=13" "safetensors>=0.4" \
         "scipy>=1.13" "scikit-learn>=1.5" "math_verify" \
         "pyyaml>=6" "tqdm>=4.66"
 
-    # Heavy deps: only install if absent. Colab ships transformers/datasets/accelerate.
-    for pkg in "transformers:transformers>=4.45" \
-               "datasets:datasets>=3.0" \
-               "accelerate:accelerate>=1.0" \
-               "peft:peft>=0.13" \
-               "trl:trl>=0.11"; do
-        mod="${pkg%%:*}"; spec="${pkg#*:}"
-        if ! python -c "import $mod" 2>/dev/null; then
-            echo "[setup] $mod missing → install $spec"
-            uv pip install --system "$spec"
-        else
-            echo "[setup] $mod present, skip"
-        fi
-    done
+    # Enforce version caps for ML stack. Cap upper to last 4.x / 0.x line that
+    # works on torch 2.10 + cu128 (Colab default). Colab base may ship 5.x or 6.x.
+    python - <<'PY'
+import importlib.metadata as m
+need = []
+caps = {
+    "transformers": ("4.45", "5.0"),
+    "trl":          ("0.11", "1.0"),
+    "peft":         ("0.13", "0.18"),
+    "accelerate":   ("1.0",  "2.0"),
+    "datasets":     ("3.0",  None),
+}
+def parse(v):
+    return tuple(int(x) for x in v.split(".")[:3] if x.isdigit())
+for pkg, (lo, hi) in caps.items():
+    try:
+        cur = m.version(pkg)
+        cur_t = parse(cur)
+    except m.PackageNotFoundError:
+        spec = f"{pkg}>={lo}" + (f",<{hi}" if hi else "")
+        print(f"[setup] {pkg} missing → install {spec}")
+        need.append(spec)
+        continue
+    if hi and cur_t >= parse(hi):
+        spec = f"{pkg}>={lo},<{hi}"
+        print(f"[setup] {pkg}=={cur} ≥ cap {hi} → downgrade to {spec}")
+        need.append(spec)
+    elif cur_t < parse(lo):
+        spec = f"{pkg}>={lo}" + (f",<{hi}" if hi else "")
+        print(f"[setup] {pkg}=={cur} < min {lo} → upgrade to {spec}")
+        need.append(spec)
+    else:
+        print(f"[setup] {pkg}=={cur} OK")
+import pathlib
+pathlib.Path("/tmp/_need.txt").write_text("\n".join(need))
+PY
+    if [[ -s /tmp/_need.txt ]]; then
+        echo "[setup] installing pinned specs (no --force-reinstall to keep cuda-bindings stable):"
+        cat /tmp/_need.txt
+        # shellcheck disable=SC2046
+        uv pip install --system $(cat /tmp/_need.txt | tr '\n' ' ')
+    fi
 
-    # Fallback: if existing trl/transformers combo is broken, pin known-good
-    # without --force-reinstall (which pulls cuda-bindings 13.x).
-    if ! python -c "from trl import SFTTrainer, DPOTrainer" 2>/dev/null; then
-        echo "[setup] trl/transformers combo broken — installing pinned combo (no --force)"
-        uv pip install --system "transformers>=4.45,<4.50" "trl>=0.11,<0.13" "peft>=0.13,<0.14"
+    # Validate trl chain importable end-to-end.
+    if ! python -c "from trl import SFTTrainer, DPOTrainer" 2>&1 | tail -5; then
+        echo "[setup] WARNING: trl import still broken; last-resort pin"
+        uv pip install --system "transformers==4.46.3" "trl==0.11.4" "peft==0.13.2" "accelerate==1.0.1"
     fi
 else
     echo "[setup] installing project deps via uv sync"
