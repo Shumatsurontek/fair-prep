@@ -30,17 +30,43 @@ if ! command -v uv >/dev/null 2>&1; then
 fi
 echo "[setup] uv = $(uv --version)"
 
-# ── 3. core deps via uv ────────────────────────────────────────────────────────
-echo "[setup] installing project deps"
-uv sync --no-dev
+# ── 3. core deps ───────────────────────────────────────────────────────────────
+# On Colab: install into the system Python (already has torch+CUDA).
+# Elsewhere: create a project venv via `uv sync`.
+IS_COLAB=0
+if [[ -d /content ]] || python -c "import google.colab" 2>/dev/null; then
+    IS_COLAB=1
+fi
+echo "[setup] colab=$IS_COLAB"
+
+if [[ "$IS_COLAB" == "1" ]]; then
+    echo "[setup] installing core deps into Colab system Python (preserves torch+CUDA)"
+    uv pip install --system --no-deps -r <(python - <<'PY'
+import tomllib, pathlib
+p = pathlib.Path("pyproject.toml")
+data = tomllib.loads(p.read_text())
+for d in data["project"]["dependencies"]:
+    if d.split(">=")[0].split("==")[0].split("<")[0].strip() in {"torch"}:
+        continue            # keep Colab pre-installed torch+CUDA
+    print(d)
+PY
+)
+    uv pip install --system peft trl datasets accelerate transformers safetensors
+else
+    echo "[setup] installing project deps via uv sync"
+    uv sync --no-dev
+fi
 
 # ── 4. unsloth (optional, requires CUDA) ───────────────────────────────────────
 if [[ "$WITH_UNSLOTH" == "1" ]]; then
     if python -c "import torch; assert torch.cuda.is_available()" 2>/dev/null; then
         echo "[setup] installing unsloth (CUDA detected)"
-        # Colab-pinned wheel: avoids torch reinstall conflicts.
-        uv pip install --no-deps "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
-        uv pip install "unsloth_zoo>=2025.1.0" "xformers<0.0.27" "peft" "trl" "bitsandbytes"
+        # Use Colab system Python install — avoids venv torch swap.
+        if [[ "$IS_COLAB" == "1" ]]; then
+            uv pip install --system "unsloth" "unsloth_zoo"
+        else
+            uv pip install "unsloth" "unsloth_zoo"
+        fi
     else
         echo "[setup] no CUDA → skip unsloth"
     fi
@@ -60,8 +86,13 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
 # ── 7. smoke test ──────────────────────────────────────────────────────────────
 cd "$REPO_DIR/lora-bench"
 echo "[setup] smoke check"
-uv run python -c "import torch; print(f'torch={torch.__version__}  cuda={torch.cuda.is_available()}  device_count={torch.cuda.device_count()}')"
-uv run python -c "from src.cli.app import app; print('lb CLI: OK')"
+if [[ "$IS_COLAB" == "1" ]]; then
+    python -c "import torch; print(f'torch={torch.__version__}  cuda={torch.cuda.is_available()}  device_count={torch.cuda.device_count()}')"
+    python -c "from src.cli.app import app; print('lb CLI: OK')"
+else
+    uv run python -c "import torch; print(f'torch={torch.__version__}  cuda={torch.cuda.is_available()}  device_count={torch.cuda.device_count()}')"
+    uv run python -c "from src.cli.app import app; print('lb CLI: OK')"
+fi
 
 echo
 echo "✓ setup done.  cd $REPO_DIR/lora-bench  &&  ./lb --help"

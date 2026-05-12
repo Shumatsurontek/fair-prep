@@ -3,4 +3,15 @@
 # Symlink to ~/bin or alias for global use:  alias lb=/path/to/lora-bench/lb
 set -euo pipefail
 cd "$(dirname "$(readlink -f "$0" 2>/dev/null || python -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$0")")"
-exec uv run python -m src.cli.app "$@"
+
+# Colab: no project venv (we install deps with `uv pip install --system`).
+# Detect via /content/ or google.colab module; fall back to system python.
+if [[ -d /content ]] || python -c "import google.colab" 2>/dev/null; then
+    exec python -m src.cli.app "$@"
+fi
+
+# Local: prefer uv-managed venv if uv available, else system python.
+if command -v uv >/dev/null 2>&1; then
+    exec uv run python -m src.cli.app "$@"
+fi
+exec python -m src.cli.app "$@"
