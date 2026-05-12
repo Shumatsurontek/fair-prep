@@ -2,7 +2,7 @@
 
 LoRA bench for small language models + cross-size LoRA transfer + merging scaling-law experiments. Unified `lb` CLI.
 
-Models supported: Qwen3 (0.6B → 14B), Qwen2.5, Llama-3.2, Gemma-2.
+Models supported: Qwen3 (0.6B → 14B)
 
 ## Sub-projects
 
