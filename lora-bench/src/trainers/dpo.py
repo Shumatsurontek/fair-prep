@@ -37,8 +37,12 @@ def run(
     trainable, total = count_trainable(policy)
     print(f"[lora-policy] trainable={trainable:,} / total={total:,}")
 
+    import torch
     bf16 = bool(cfg["train"].get("bf16", False)) and device == "cuda"
     fp16 = bool(cfg["train"].get("fp16", False)) and device == "cuda" and not bf16
+    if bf16 and device == "cuda" and not torch.cuda.is_bf16_supported():
+        print("[dpo] bf16 requested but GPU is pre-Ampere (T4) → using fp16")
+        bf16, fp16 = False, True
     if device == "mps":
         bf16 = fp16 = False
 

@@ -23,11 +23,14 @@ def get_device() -> str:
 def get_torch_dtype(device: str, base_cfg: dict) -> torch.dtype:
     key = f"dtype_{device}"
     name = base_cfg["model"].get(key, "float32")
-    return {
-        "float32": torch.float32,
-        "float16": torch.float16,
-        "bfloat16": torch.bfloat16,
-    }[name]
+    dtype = {"float32": torch.float32, "float16": torch.float16,
+             "bfloat16": torch.bfloat16}[name]
+    # T4 / pre-Ampere: bf16 weights load but no Tensor Cores → slow.
+    # Auto-fallback to fp16 (Tensor-Core-accelerated on Turing).
+    if device == "cuda" and dtype is torch.bfloat16 and not torch.cuda.is_bf16_supported():
+        print("[model] bf16 not supported on this GPU → using fp16")
+        return torch.float16
+    return dtype
 
 
 def set_seed(seed: int) -> None:

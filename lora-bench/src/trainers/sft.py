@@ -43,8 +43,13 @@ def run(cfg: dict, device: str, max_steps: int = -1, max_train_samples: int | No
     train_ds, eval_ds = loader(cfg, tokenizer, with_eval=True)
     print(f"[data] train_size={len(train_ds)}  eval_size={len(eval_ds) if eval_ds else 0}")
 
+    import torch
     bf16 = bool(cfg["train"].get("bf16", False)) and device == "cuda"
     fp16 = bool(cfg["train"].get("fp16", False)) and device == "cuda" and not bf16
+    # T4 / pre-Ampere: bf16 unsupported. Auto-fallback to fp16.
+    if bf16 and device == "cuda" and not torch.cuda.is_bf16_supported():
+        print("[sft] bf16 requested but GPU is pre-Ampere (T4) → using fp16")
+        bf16, fp16 = False, True
     if device == "mps":
         bf16 = fp16 = False
 

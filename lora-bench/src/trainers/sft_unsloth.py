@@ -55,10 +55,14 @@ def run(
 
     model_name = cfg["model"]["name"]
     max_seq = int(cfg["tokenizer"]["max_length"])
+    # T4 / older = Turing → bf16 unsupported. Detect & fall back to fp16.
+    bf16_ok = torch.cuda.is_bf16_supported()
+    dtype = torch.bfloat16 if bf16_ok else torch.float16
+    print(f"[unsloth] bf16_supported={bf16_ok}  dtype={dtype}")
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name=model_name,
         max_seq_length=max_seq,
-        dtype=torch.bfloat16,
+        dtype=dtype,
         load_in_4bit=load_in_4bit,
     )
     if tokenizer.pad_token is None:
@@ -105,8 +109,8 @@ def run(
         load_best_model_at_end=cfg["train"].get("load_best_model_at_end", False) and has_eval,
         metric_for_best_model=cfg["train"].get("metric_for_best_model", "eval_loss"),
         greater_is_better=cfg["train"].get("greater_is_better", False),
-        bf16=True,
-        fp16=False,
+        bf16=bf16_ok,
+        fp16=not bf16_ok,
         report_to=cfg["train"].get("report_to", "tensorboard"),
         max_steps=max_steps,
         dataset_text_field="text",
