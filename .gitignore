@@ -1,0 +1,68 @@
+# Personal — out of research scope
+maths/
+notes/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+
+# uv / venv
+.venv/
+.uv/
+.python-version
+uv.lock
+
+# Caches
+.cache/
+.huggingface/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*~
+
+# Claude
+.claude/
+
+# Run artifacts (heavy + reproducible)
+runs/
+lora-bench/runs/
+lora-bench/.cache/
+lora-bench/wandb/
+lora-bench/data/
+checkpoints/
+wandb/
+tensorboard/
+events.out.tfevents.*
+
+# Model weights
+*.bin
+*.safetensors
+*.pt
+*.ckpt
+
+# Logs
+*.log
+*.aux
+*.toc
+*.out
+
+# Eval results — keep small JSON + REPORT.md
+lora-bench/results/raw/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem

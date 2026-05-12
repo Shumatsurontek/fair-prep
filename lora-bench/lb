@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Tiny launcher — runs `python -m src.cli.app` from lora-bench/.
+# Symlink to ~/bin or alias for global use:  alias lb=/path/to/lora-bench/lb
+set -euo pipefail
+cd "$(dirname "$(readlink -f "$0" 2>/dev/null || python -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$0")")"
+exec uv run python -m src.cli.app "$@"

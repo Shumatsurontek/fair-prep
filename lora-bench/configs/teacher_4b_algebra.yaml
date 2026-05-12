@@ -1,0 +1,65 @@
+# Teacher LoRA SFT — Qwen3-4B on MATH algebra subset.
+# Inherits from base.yaml. Per-domain configs share this template, override
+# `dataset.subset` and `run_name`.
+
+model:
+  name: "Qwen/Qwen3-4B-Instruct-2507"
+  trust_remote_code: true
+
+tokenizer:
+  name: "Qwen/Qwen3-4B-Instruct-2507"
+
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+dataset:
+  name: "EleutherAI/hendrycks_math"     # MATH benchmark by Hendrycks
+  config: "algebra"
+  train_split: "train"
+  eval_split: "test"
+  prompt_template: "qwen_chat"
+  max_train_samples: 2000               # POC: cap per-domain
+  max_eval_samples: 100
+  eval_holdout: 100
+
+train:
+  num_train_epochs: 1
+  per_device_train_batch_size: 1        # 4B + bf16 fits ~24GB at seq=1024
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 16       # effective batch = 16
+  learning_rate: 5.0e-5                 # lower than 0.6B (bigger model, gentler)
+  lr_scheduler_type: "cosine"
+  warmup_steps: 50
+  weight_decay: 0.0
+  max_grad_norm: 0.5
+  optim: "adamw_torch"
+  logging_steps: 20
+  eval_strategy: "steps"
+  eval_steps: 100
+  save_strategy: "steps"
+  save_steps: 100
+  save_total_limit: 1
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+  bf16: true
+  fp16: false
+  report_to: "tensorboard"
+  packing: false
+  gradient_checkpointing: true          # 4B → enable to fit memory
+
+early_stopping:
+  patience: 3
+  threshold: 0.0
+
+run_name: "qwen3_4b_teacher_algebra"

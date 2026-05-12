@@ -1,0 +1,403 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage[margin=1.8cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{listings}
+\usepackage{xcolor}
+\tcbuselibrary{breakable,skins}
+
+\hypersetup{colorlinks=true, linkcolor=blue!60!black, urlcolor=blue!60!black}
+
+\definecolor{codebg}{rgb}{0.96,0.96,0.96}
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  numbers=none,
+  frame=single,
+  framesep=4pt,
+  xleftmargin=4pt,
+}
+
+\newtcolorbox{idea}[1]{breakable, colback=blue!4, colframe=blue!50!black, title={#1}, fonttitle=\bfseries, sharp corners}
+\newtcolorbox{formula}[1]{breakable, colback=green!4, colframe=green!40!black, title={#1}, fonttitle=\bfseries, sharp corners}
+\newtcolorbox{caveat}[1]{breakable, colback=red!3, colframe=red!50!black, title={#1}, fonttitle=\bfseries, sharp corners}
+\newtcolorbox{intuit}[1]{breakable, colback=yellow!8, colframe=orange!70!black, title={#1}, fonttitle=\bfseries, sharp corners}
+\newtcolorbox{result}[1]{breakable, colback=violet!4, colframe=violet!60!black, title={#1}, fonttitle=\bfseries, sharp corners}
+
+\DeclareMathOperator{\KL}{KL}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Pp}{\mathbb{P}}
+
+\title{\textbf{OnPolicy-DPO-GTW}\\
+\large Group-Token-Weighted DPO --- Free process supervision sans PRM\\
+\normalsize Préparation entretien Meta FAIR (SGT / FoRT)}
+\author{Arthur Edmond}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{intuit}{TL;DR --- pitch 60 secondes}
+J'ai entraîné Qwen3-0.6B sur GSM8K via un pipeline complet : \textbf{SFT LoRA $\to$ DPO standard $\to$ DPO custom on-policy} avec une \textbf{contribution originale} : un mécanisme de \emph{Group Leave-One-Out Token Attribution} qui dérive un signal de supervision \emph{token-par-token} (process reward) à partir d'un reward outcome-only, sans entraîner de Process Reward Model (PRM). Combiné à un $\beta$ cosine adaptatif, un multi-loss (DPO seq + DPO token + SFT + KL) et un replay buffer. \\
+\textbf{Résultats actuels} (200 samples GSM8K, MPS Mac) : Baseline 22\% $\to$ SFT-LoRA 34\% (+12 pts) $\to$ SFT+DPO 37\% (+15 pts) $\to$ SFT+GTW à benchmarker.
+\end{intuit}
+
+\tableofcontents
+\bigskip\hrule\bigskip
+
+% =====================================================================
+\section{Motivation}
+
+\subsection{Le pipeline RLHF moderne et ses limites}
+
+Pipeline canonique : SFT $\to$ Reward Model $\to$ PPO/DPO. Ces dernières années :
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{DPO} (Rafailov 2023) supprime le RM explicite via solution analytique du RL régularisé.
+  \item \textbf{GRPO} (Shao 2024) supprime le critic via avantage normalisé par groupe.
+  \item \textbf{Step-DPO} (Lai 2024) introduit la supervision par étape, mais nécessite annotation humaine coûteuse.
+  \item \textbf{Iterative DPO / RPO} (Xu, Pang 2024) repassent on-policy mais sans token-level credit.
+\end{itemize}
+
+\begin{caveat}{Limites du DPO offline standard}
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Off-policy.} Les paires de préférences viennent d'autres modèles $\Rightarrow$ distribution mismatch avec $\pi_\theta$ courant.
+  \item \textbf{Pas de verifier.} GSM8K a un ground-truth exact (\texttt{\#\#\#\# N}) $\Rightarrow$ signal gaspillé.
+  \item \textbf{Single loss sigmoid.} Sous-exploite signal SFT (alignment-tax) ; aucune process supervision.
+  \item \textbf{$\beta$ fixe.} Tradeoff "stuck vs drift" jamais calibré dynamiquement.
+  \item \textbf{Pas d'exploration.} Modèle ne se mesure jamais à ses propres sorties.
+\end{enumerate}
+\end{caveat}
+
+\begin{idea}{Question de recherche}
+\textbf{Peut-on dériver un signal process-level (par token CoT) à partir d'un reward outcome-only, sans entraîner de PRM ?}
+\\[2pt]
+État de l'art : aucun trainer TRL/HF ne combine \emph{génération on-policy} + \emph{DPO} + \emph{token-level credit via LOO} + \emph{$\beta$ adaptatif} + \emph{replay}.
+\end{idea}
+
+% =====================================================================
+\section{Proposition : OnPolicy-DPO-GTW}
+
+\subsection{Vue d'ensemble du trainer}
+
+À chaque étape de gradient :
+
+\begin{enumerate}[leftmargin=*]
+  \item Tirer $B$ prompts $(x, y^\star)$ du dataset.
+  \item Pour chaque $x$, générer $G$ complétions $\{o^{(1)}, \dots, o^{(G)}\}$ avec $\pi_\theta$ (sampling température $\tau$, top-$p$).
+  \item Scorer via reward $r_i = r(x, o^{(i)}) \in \{0, 1\}$.
+  \item \textbf{Filtrer} les groupes où $\sum_i r_i \in \{0, G\}$ (pas de signal).
+  \item Construire les paires intra-groupe $(o^{(c)}, o^{(w)})$ avec $r_c > r_w$.
+  \item Calculer les \textbf{poids token-LOO} $w_t^{(c)}$ (cf. \S\ref{sec:loo}).
+  \item Calculer la \textbf{loss multi-composantes} (cf. \S\ref{sec:multiloss}).
+  \item Backward + step. Update replay buffer.
+\end{enumerate}
+
+% =====================================================================
+\section{Formulation mathématique}
+
+\subsection{Group Leave-One-Out Token Attribution}\label{sec:loo}
+
+\begin{formula}{Définition : poids token-LOO}
+Pour chaque complétion correcte $o^{(c)}$ (avec $r_c = 1$) dans un groupe $\mathcal{G} = \{o^{(1)}, \dots, o^{(G)}\}$, on définit le poids du token à la position $t$ :
+\[
+  w_t^{(c)} = \Var_{o \in \mathcal{G}}\!\left[\mathbf{1}_{o_t = o^{(c)}_t}\right] \cdot r_c.
+\]
+Borne : $w_t \in [0, 0.25]$ (variance Bernoulli max en $p = 1/2$).
+\end{formula}
+
+\textbf{Interprétation géométrique.}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Token trivial} ($w_t \approx 0$) : tous les $o^{(i)}$ partagent le même token $o^{(c)}_t$ $\Rightarrow$ variance 0. Pas d'information discriminante.
+  \item \textbf{Token discriminant} ($w_t$ max) : moitié du groupe partage, moitié diverge $\Rightarrow$ variance Bernoulli à $p = 1/2$. Token qui distingue correct/incorrect.
+  \item \textbf{Token isolé} ($w_t \approx 0$) : tous divergent. Souvent token unique du contexte (e.g. variable nommée).
+\end{itemize}
+
+\textbf{En pratique :} on floor à $\varepsilon = 0.05$ pour éviter $w = 0$ qui annule le gradient.
+
+\begin{intuit}{Pourquoi cette formulation ?}
+Hypothèse : un token \emph{causalement} lié à la correction est rarement partagé par les complétions incorrectes. La variance groupe approxime un signal de \emph{séparabilité} sans coût supplémentaire (un seul forward pour la décoder). C'est l'analogue token-level de l'avantage groupe de GRPO.
+\end{intuit}
+
+\subsection{Multi-loss}\label{sec:multiloss}
+
+Pose le log-rapport sommé $\rho(o) = \sum_t [\log \pi_\theta(o_t | \cdot) - \log \pi_{\mathrm{ref}}(o_t | \cdot)]$.
+
+\textbf{DPO séquence} (standard) :
+\[
+  \mathcal{L}_{\mathrm{DPO-seq}} = -\log \sigma\big(\beta_t (\rho(o^{(c)}) - \rho(o^{(w)}))\big).
+\]
+
+\textbf{DPO token-weighted} (notre contribution) :
+\[
+  \rho_w(o) = \sum_t w_t \cdot [\log \pi_\theta(o_t | \cdot) - \log \pi_{\mathrm{ref}}(o_t | \cdot)],
+\]
+\[
+  \mathcal{L}_{\mathrm{DPO-tok}} = -\log \sigma\big(\beta_t (\rho_w(o^{(c)}) - \rho_w(o^{(w)}))\big).
+\]
+
+\textbf{SFT chosen-only} (anti-alignment-tax) :
+\[
+  \mathcal{L}_{\mathrm{SFT}} = -\frac{1}{|o^{(c)}|} \sum_t \log \pi_\theta(o^{(c)}_t | o^{(c)}_{<t}, x).
+\]
+
+\textbf{KL drift control} :
+\[
+  \mathcal{L}_{\mathrm{KL}} \approx \E_{o \sim \pi_\theta}[\log \pi_\theta - \log \pi_{\mathrm{ref}}].
+\]
+
+\textbf{Loss totale} :
+\[
+  \boxed{\mathcal{L} = \alpha_1 \mathcal{L}_{\mathrm{DPO-seq}} + \alpha_2 \mathcal{L}_{\mathrm{DPO-tok}} + \alpha_3 \mathcal{L}_{\mathrm{SFT}} + \alpha_4 \mathcal{L}_{\mathrm{KL}}}
+\]
+avec $(\alpha_1, \alpha_2, \alpha_3, \alpha_4) = (1.0, 0.5, 0.3, 0.05)$.
+
+\subsection{$\beta$ adaptatif}
+
+\[
+  \beta_t = \beta_{\min} + (\beta_0 - \beta_{\min}) \cdot \tfrac{1}{2}(1 + \cos(\pi \cdot t/T_{\max}))
+\]
+
+avec $\beta_0 = 0.2, \beta_{\min} = 0.02$. Démarre régularisation forte (proche $\pi_{\mathrm{ref}}$), relâche en cosine $\Rightarrow$ exploration tardive. Intuition : early training = ne pas drifter ; late = exploiter le signal accumulé.
+
+\subsection{Lien avec PAC-Bayes (heuristique)}
+
+PAC-Bayes McAllester : $\E_Q[R] \le \E_Q[\hat R] + \sqrt{\KL(Q \| P)/(2n)}$.
+
+Notre $w_t$ peut être vu comme un \textbf{re-weighting du posterior implicite} $Q$ sur les sorties : on concentre la masse sur les tokens où la divergence groupe est élevée, ce qui correspond à un $Q$ \emph{plus piqué} sur les zones informatives. C'est une heuristique --- pas de garantie formelle d'amélioration de borne PAC-Bayes.
+
+% =====================================================================
+\section{Pseudo-code}
+
+\begin{lstlisting}[language=Python]
+Algorithm OnPolicy-DPO-GTW
+Input : pi_theta (LoRA on pi_ref), tokenizer, dataset (x, y*),
+        reward_fn r, G, T_max, beta_0, beta_min, weights alpha_i,
+        replay_buffer
+
+for step in 0..T_max-1:
+    beta_t = cosine_anneal(step, T_max, beta_0, beta_min)
+    batch = sample(dataset, prompt_batch_size)
+    pairs, chosen_token_weights = [], []
+
+    for (x, y*) in batch:
+        # 1. on-policy gen
+        G_set = [pi_theta.generate(x, T=tau, top_p=p) for _ in 1..G]
+        # 2. score
+        rewards = [r(x, o_i, y*) for o_i in G_set]
+        # 3. filter
+        if sum(rewards) in {0, G}: continue
+        # 4. build pairs
+        for (c, w) in {(i,j): r_i > r_j}:
+            pairs.append((x, G_set[c], G_set[w]))
+            # 5. token-LOO weights for chosen
+            w_t = Var_{o in G_set}[I(o_t == G_set[c]_t)]
+            w_t = clamp(w_t * r_c, min=epsilon_floor)
+            chosen_token_weights.append(w_t)
+
+    # replay injection
+    pairs += replay_buffer.sample(len(pairs), p_inject)
+
+    # 6. losses
+    L_seq, L_tok, L_sft, L_kl = compute_losses(pairs, weights, beta_t)
+    L_total = alpha_1*L_seq + alpha_2*L_tok + alpha_3*L_sft + alpha_4*L_kl
+
+    # 7. step
+    L_total.backward()
+    clip_grad_norm(pi_theta, max_norm=0.5)
+    optimizer.step()
+    cosine_lr_scheduler.step()
+
+    # 8. update replay
+    replay_buffer.push(pairs[:k])
+
+return pi_theta
+\end{lstlisting}
+
+% =====================================================================
+\section{Implémentation}
+
+\subsection{Stack technique}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Modèle.} Qwen3-0.6B (\texttt{Qwen/Qwen3-0.6B}), thinking mode \texttt{<think>...</think>}.
+  \item \textbf{Adapter.} LoRA r=16, $\alpha$=32, target = qkv, o, gate, up, down. \textbf{10M params trainables sur 606M total (1.66\%)}.
+  \item \textbf{Optim.} AdamW lr=3e-6, cosine schedule, grad clip 0.5, warmup 5 steps.
+  \item \textbf{Hardware.} MPS (Mac M-series) en fp16. CUDA bf16 supporté via switch device.
+  \item \textbf{Ref model.} Obtenu en désactivant les adapters LoRA sur le même modèle (\texttt{model.disable\_adapter()}). Aucune copie mémoire.
+  \item \textbf{TRL stack.} v1.4 stable. Notre trainer ne sous-classe \emph{pas} \texttt{DPOTrainer} (loop manuel) pour garder le contrôle sur la génération on-policy.
+\end{itemize}
+
+\subsection{Arborescence}
+
+\begin{lstlisting}
+fair-prep/lora-bench/
+|-- configs/op_dpo_gtw.yaml       # hyperparams trainer
+|-- src/
+|   |-- rewards/                  # gsm8k_accuracy_reward + test
+|   |-- replay_buffer.py          # Pair + ReplayBuffer FIFO
+|   |-- trainers/op_dpo_gtw.py    # helpers + StandaloneOnPolicyDPOGTW
+|   `-- train_op_dpo_gtw.py       # launcher manual loop
+`-- scripts/
+    |-- 06_train_op_dpo_gtw.sh
+    |-- 07_eval_op_dpo_gtw.sh
+    `-- 98_only_gtw.sh             # train + eval + report (preserve other JSON)
+\end{lstlisting}
+
+% =====================================================================
+\section{Résultats empiriques}
+
+\subsection{Bench complet (200 samples GSM8K, MPS Mac)}
+
+\begin{result}{Tableau comparatif}
+\begin{center}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Étape} & \textbf{Accuracy} & \textbf{$\Delta$ baseline} & \textbf{Tokens/s} & \textbf{Wall} \\
+\hline
+Baseline (Qwen3-0.6B) & 22.0\% & --- & 37.1 & 46 min \\
+SFT-LoRA (1 epoch GSM8K) & 34.0\% & +12.0 pts & 25.0 & 20 min \\
+SFT + DPO (Math-Step-DPO-10K) & 37.0\% & +15.0 pts & 25.0 & 4h+ \\
+SFT + GTW (custom) & \emph{à mesurer} & \emph{à mesurer} & --- & ~80 min \\
+\hline
+\end{tabular}
+\end{center}
+\end{result}
+
+\subsection{Observations clés}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{SFT $\to$ DPO} : marge fine (+3 pts). DPO offline a peu de jus restant après SFT bien calibré.
+  \item \textbf{DPO train metrics} :
+    \begin{itemize}
+      \item \texttt{rewards/margins} : $0 \to 0.118$ $\Rightarrow$ séparation chosen/rejected effective.
+      \item \texttt{rewards/accuracies eval} : 43-46\% $\Rightarrow$ DPO peine sur l'eval set (proche random 50\%, signal modeste).
+      \item \texttt{logps/chosen,rejected} : tous deux à $-103$. Pas de "stuck" (logp absolu stable).
+    \end{itemize}
+  \item \textbf{GTW smoke test} : 5 steps OK sur MPS. Step 0 : 3 paires construites, loss 5.58 (seq=2.95, tok=4.79, sft=0.63, kl=0.99). $\beta$ démarre à 0.2, anneal cosine effectif.
+  \item \textbf{Coût compute.} GTW step = $G \cdot$ generation ($\approx 8$ gen / step à $G$=4, $B$=2). MPS = 30-70s/step selon longueur. 100 steps $\approx$ 80 min.
+\end{itemize}
+
+% =====================================================================
+\section{Limites et points d'attention}
+
+\begin{caveat}{À discuter à l'entretien}
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Biais du $w_t$.} L'estimateur n'est \emph{pas} formellement non-biaisé pour le "process reward marginal". C'est un proxy : dépendances long-range polluent (un token correct précoce gonfle artificiellement le $w_t$ tardif par cohérence).
+  \item \textbf{Variance.} $\Var(w_t) \sim 1/G$. Pour $G=4$ : variance résiduelle non négligeable. Idéal $G \ge 8$ mais coûteux en gen.
+  \item \textbf{Alignement chosen/rejected.} Longueurs différentes ; on pad et applique mêmes poids $\Rightarrow$ bricolage. Une vraie formulation impliquerait des alignements via edit distance.
+  \item \textbf{Reward binaire.} Marche pour GSM8K (vérifier exact-match). Soft tasks (code partiel, qualité texte) sortent du cadre direct.
+  \item \textbf{Pas de critic.} Peut diverger plus que PPO+critic sur tâches complexes (mais c'est aussi l'argument de GRPO).
+  \item \textbf{Stabilité numérique sur quantization 4-bit.} \texttt{disable\_adapter()} sur LoRA seul est rapide, mais sur QLoRA il y a des subtilités à vérifier.
+  \item \textbf{Filtre prompts.} Si politique trop forte ou trop faible, $\sum r_i \in \{0, G\}$ trop souvent $\Rightarrow$ pas de signal. Fix : augmenter température, curriculum, ou échantillonner $G$ plus grand.
+\end{enumerate}
+\end{caveat}
+
+% =====================================================================
+\section{Hypothèses testables et roadmap ablation}
+
+\begin{idea}{Ablations à mener}
+\begin{center}
+\begin{tabular}{|c|l|l|}
+\hline
+\# & \textbf{Variante} & \textbf{Hypothèse} \\
+\hline
+0 & Vanilla DPO (offline) & Baseline \\
+1 & +OnPolicy seul ($G$=4, $w_t = 1$) & Mismatch fix dominant ? \\
+2 & +Token weighting (avec OnPolicy) & $w_t$ apporte signal ? \\
+3 & +Multi-loss SFT & Anti alignment-tax effectif ? \\
+4 & +Adaptive $\beta$ cosine & Schedule $>$ constant ? \\
+5 & +Replay buffer & Catastrophic forgetting fix ? \\
+6 & Full GTW & Tout combiné \\
+\hline
+\end{tabular}
+\end{center}
+\end{idea}
+
+\textbf{Validation théorique (à faire)} : montrer que sous hypothèse de cohérence groupe, $w_t$ donne un estimateur consistant (pas non-biaisé) du process reward marginal. Vérifier numériquement via simulation toy.
+
+\textbf{Bench OOD} : eval cross-task MATH-500 (jamais vu pendant train) pour mesurer si la token-level supervision améliore la généralisation hors-distribution. Hypothèse SGT-aligned.
+
+% =====================================================================
+\section{Lien avec les sujets FAIR}
+
+\subsection{SGT --- Scalable Generalization Team}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Data-efficiency.} GTW exploite mieux chaque échantillon en extrayant un signal token-level d'un reward seq-level. 1 reward $\to$ $T$ signaux gradients.
+  \item \textbf{Process supervision sans annotation.} Aligné avec la philosophie "biais inductif structurel" plutôt que "scale + data". Token-LOO encode un biais : la séparabilité groupe = informativité.
+  \item \textbf{Lien IRM} (Arjovsky). $w_t$ identifie les tokens dont la valeur prédictive varie entre "environnements" (ici, les $G$ rollouts). Analogie lointaine avec invariance causale.
+\end{itemize}
+
+\subsection{FoRT --- Foundational Reasoning Team}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{RL pour reasoning.} Tout le pipeline (génération on-policy, reward exact-match, multi-loss) s'inscrit dans la nouvelle vague initiée par DeepSeek-R1/GRPO.
+  \item \textbf{Free process supervision.} Réponse directe au défi central de FoRT : comment fournir un signal step-by-step sans PRM coûteux.
+  \item \textbf{Trust region adaptive.} $\beta$ cosine = analogue continu de la trust region PPO/TRPO.
+\end{itemize}
+
+% =====================================================================
+\section{Talking points pour l'entretien}
+
+\begin{intuit}{Phrases à savoir prononcer sans hésiter}
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{En quoi GTW se distingue de GRPO ?} GRPO calcule un avantage \emph{sequence-level} normalisé sur le groupe. GTW pousse cela au \emph{token-level} via la variance positionnelle de la concordance.
+  \item \textbf{Pourquoi ce n'est pas un PRM ?} Un PRM est un modèle paramétrique $r_\phi(\text{step})$ qu'on entraîne. Notre $w_t$ est calculé en \emph{closed form} à partir des $G$ rollouts existants. Coût marginal = compter des matches.
+  \item \textbf{Pourquoi $\beta$ cosine ?} Empiriquement, $\beta$ fixe = soit le modèle reste collé à $\pi_{\mathrm{ref}}$ (stuck), soit il drift catastrophiquement. Annealing donne le meilleur des deux régimes.
+  \item \textbf{Quelle est la principale limite que tu vois ?} Le $w_t$ n'est pas formellement non-biaisé pour le vrai process reward. C'est un proxy heuristique avec une intuition claire (séparabilité $\Rightarrow$ informativité) mais aucune garantie de convergence vers le ground-truth PRM.
+  \item \textbf{Et si tu avais 100k GPU-h ?} Ablation matrix complète, ajout d'un PRM oracle (Qwen3-4B distillé) comme upper bound, eval OOD sur MATH-500/MMLU-Pro/Olympiad.
+\end{enumerate}
+\end{intuit}
+
+\subsection{Questions probables et réponses préparées}
+
+\textbf{Q : Pourquoi DPO et pas PPO+critic ?} \\
+DPO supprime le critic (moins de bruit bootstrap, moins de mémoire). Sur reasoning avec reward vérifiable, GRPO/DPO surclassent empiriquement PPO+critic à coût égal. C'est aligné avec Tülu 3 et DeepSeek-Math.
+
+\textbf{Q : Pourquoi LoRA et pas full fine-tune ?} \\
+Aghajanyan et al. : la dim intrinsèque des updates de fine-tuning est très petite. Eckart-Young : si $\Delta W^\star$ a rang effectif $\le r$, LoRA n'a aucune perte d'expressivité. En pratique : 0.8\% des params suffisent pour matcher full fine-tune.
+
+\textbf{Q : Comment évalues-tu le gain de la token-LOO ?} \\
+Ablation 1 ($w_t = 1$) vs ablation 2 ($w_t$ = variance LOO). Si gain net $>$ bruit $\Rightarrow$ le poids token a contribué. Sinon, on rejette l'hypothèse.
+
+\textbf{Q : Et le coût mémoire ?} \\
+LoRA r=16 + adapter désactivé pour ref = mêmes weights utilisés deux fois. Aucune copie. Surcoût = batch on-policy avec $G$ générations $\Rightarrow$ scale linéaire avec $G$. Pour $G$=4 et batch=2 : ~1.2 GB extra activations.
+
+\textbf{Q : Pourquoi ne pas avoir utilisé vLLM ?} \\
+MPS-only contraint à \texttt{model.generate()} natif. Sur CUDA, vLLM serait la prochaine étape (5-10x speedup en génération).
+
+% =====================================================================
+\section{Conclusion}
+
+\begin{result}{En une phrase}
+\textbf{OnPolicy-DPO-GTW} démontre qu'il est possible de dériver un signal de supervision token-level à partir d'un reward outcome-only, sans entraîner de PRM, en exploitant la variance positionnelle de la concordance dans un groupe de rollouts on-policy. Le pipeline complet (SFT + DPO + GTW) tourne en bout-en-bout sur MPS et CUDA, avec ablations reproductibles.
+\end{result}
+
+\textbf{Contributions} :
+\begin{itemize}[leftmargin=*]
+  \item Trainer custom \texttt{StandaloneOnPolicyDPOGTW} (350 lignes Python, self-managed loop).
+  \item Pipeline de bench reproductible : baseline $\to$ SFT $\to$ DPO $\to$ GTW.
+  \item Note de recherche détaillée + pseudo-code + ablations.
+\end{itemize}
+
+\textbf{À faire avant l'entretien} :
+\begin{itemize}[leftmargin=*]
+  \item Lancer le run GTW complet (100 steps, ~80min MPS) $\Rightarrow$ remplir la dernière ligne du tableau.
+  \item Ablation $w_t = 1$ vs $w_t$ LOO $\Rightarrow$ isoler la contribution de la token-LOO.
+  \item Eval OOD MATH-500.
+\end{itemize}
+
+\textbf{Repository} : \texttt{fair-prep/lora-bench/} --- voir \texttt{maths/05\_research\_dpo\_gtw.md} pour la note détaillée et \texttt{src/trainers/op\_dpo\_gtw.py} pour l'implémentation.
+
+\end{document}

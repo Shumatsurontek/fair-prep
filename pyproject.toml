@@ -1,0 +1,42 @@
+[project]
+name = "fair-prep"
+version = "0.1.0"
+description = "Préparation entretien Meta FAIR — révision maths + bench LoRA SLM"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "torch>=2.4.0",
+    "transformers>=4.45.0",
+    "peft>=0.13.0",
+    "trl>=0.11.0",
+    "datasets>=3.0.0",
+    "accelerate>=1.0.0",
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+    "numpy>=1.26",
+    "tensorboard>=2.18",
+    "lm-eval>=0.4.11",
+    "scipy>=1.13",
+    "scikit-learn>=1.5",
+    "safetensors>=0.4",
+    "typer>=0.12",
+    "rich>=13",
+]
+
+[project.optional-dependencies]
+cuda = [
+    "bitsandbytes>=0.44.0",
+]
+dev = [
+    "ruff>=0.6",
+    "ipykernel>=6.29",
+    "matplotlib>=3.9",
+    "wandb>=0.18",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.uv]
+package = false

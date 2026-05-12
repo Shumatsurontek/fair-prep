@@ -1,0 +1,44 @@
+# Cross-size LoRA transfer config.
+# Drives src.transfer.cross_lora: project teacher LoRA (Qwen3-4B) → student (Qwen3-0.6B).
+
+teacher:
+  name: "Qwen/Qwen3-4B-Instruct-2507"
+  layers: 36            # informational; read at runtime from AutoConfig
+  hidden: 2560
+
+student:
+  name: "Qwen/Qwen3-0.6B"
+  layers: 28
+  hidden: 1024
+
+transfer:
+  n_calib: 256                          # number of calib prompts
+  max_length: 512
+  batch_size: 4
+  ridge: 1.0e-4                         # OLS ridge regularization
+  layer_align: "cka"                    # "cka" | "linear"
+  min_cka: 0.05                         # below → fallback linear stride
+  finetune_after: false                 # Phase B' (optional, off by default)
+  finetune_steps: 200
+  finetune_lr: 1.0e-5
+
+calibration:
+  source: "EleutherAI/hendrycks_math"   # mixed-domain calib for general subspace
+  split: "train"
+  text_field: "problem"
+  out_path: "data/calib_math.jsonl"
+
+domains:
+  - algebra
+  - geometry
+  - number_theory
+  - intermediate_algebra
+  - prealgebra
+  - precalculus
+  - counting_and_probability
+
+merge:
+  methods: ["average", "ta", "ties", "dare"]
+  ks: [1, 2, 4, 6, 7]
+  ties_top_frac: 0.2
+  dare_p: 0.5

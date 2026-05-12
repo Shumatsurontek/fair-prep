@@ -1,0 +1,37 @@
+# Base config — shared across SFT and DPO
+model:
+  name: "Qwen/Qwen3-0.6B"
+  trust_remote_code: true
+  attn_implementation: "eager"   # MPS: flash-attn / sdpa-flash unsupported
+  dtype_cuda: "bfloat16"
+  dtype_mps: "float16"
+  dtype_cpu: "float32"
+
+tokenizer:
+  name: "Qwen/Qwen3-0.6B"
+  padding_side: "right"          # for SFT; DPOTrainer overrides if needed
+  max_length: 1024
+
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+seed: 42
+output_root: "./runs"
+hf_cache: ".cache/hf"
+
+logging:
+  tensorboard: true
+  wandb: false           # set WANDB_API_KEY env to enable
+  log_every: 20

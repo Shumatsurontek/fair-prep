@@ -1,0 +1,49 @@
+{
+  "accuracy": 0.22,
+  "n": 200,
+  "tokens_per_sec": 37.13258960220477,
+  "wall_seconds": 2750.8181113750034,
+  "peak_memory_mb": 1136.882080078125,
+  "samples": [
+    {
+      "question": "Janet\u2019s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?",
+      "gold": "18",
+      "pred": "3",
+      "ok": false,
+      "output": "<think>\nOkay, let's see. Janet's ducks lay 16 eggs per day. She eats three for breakfast and bakes muffins for her friends every day with four. Then she sells the remainder at the farmers' market for $2 per egg. The question is asking how much she makes every day at the farmers' market. Hmm, let me break this down step by step.\n\nFirst, I need to figure out how many eggs she has each day. She lays 16 eggs per day. Then she eats three for breakfast. So, that's 3 eggs. Then she bakes muffins for her friends every day with four. Wait, does that mean she uses four eggs for baking? Or does she use f"
+    },
+    {
+      "question": "A robe takes 2 bolts of blue fiber and half that much white fiber.  How many bolts in total does it take?",
+      "gold": "3",
+      "pred": "3",
+      "ok": true,
+      "output": "<think>\nOkay, let's see. The problem says a robe takes 2 bolts of blue fiber and half that much white fiber. I need to figure out how many bolts in total it takes. Hmm, let me break this down step by step.\n\nFirst, the robe uses 2 bolts of blue fiber. That's straightforward. Now, they mention half that much white fiber. So, half of 2 bolts would be... let me calculate that. Half of 2 is 1. So, the white fiber takes 1 bolt. \n\nWait, so if blue is 2 and white is 1, then total bolts would be 2 + 1? That would be 3. Is there anything else I need to consider here? The problem says \"how many bolts in "
+    },
+    {
+      "question": "Josh decides to try flipping a house.  He buys a house for $80,000 and then puts in $50,000 in repairs.  This increased the value of the house by 150%.  How much profit did he make?",
+      "gold": "70000",
+      "pred": "150",
+      "ok": false,
+      "output": "<think>\nOkay, let's see. Josh buys a house for $80,000 and then puts in $50,000 in repairs. The problem says that this increased the value of the house by 150%. I need to figure out how much profit he made. Hmm, profit... so profit is usually calculated as revenue minus cost, right? But here, he's buying the house and then putting in repairs. So maybe the profit is the difference between the selling price and the cost? Or is it the total value after repairs minus the cost? Let me think.\n\nFirst, let me parse the problem again. He buys the house for $80,000. Then he puts in $50,000 in repairs. T"
+    },
+    {
+      "question": "James decides to run 3 sprints 3 times a week.  He runs 60 meters each sprint.  How many total meters does he run a week?",
+      "gold": "540",
+      "pred": "180",
+      "ok": false,
+      "output": "<think>\nOkay, let's see. James runs 3 sprints a week, and each sprint he runs 60 meters. I need to find out how many total meters he runs in a week. Hmm, so maybe I should multiply the number of sprints by the distance of each sprint? Let me think.\n\nFirst, he does 3 sprints each week. And each sprint is 60 meters. So, if I multiply 3 by 60, that should give me the total distance. Let me do the math. 3 times 60... Well, 3 times 60 is 180. So, does that mean he runs 180 meters a week? That seems straightforward. \n\nWait, let me double-check. If each sprint is 60 meters, then over three sprints, i"
+    },
+    {
+      "question": "Every day, Wendi feeds each of her chickens three cups of mixed chicken feed, containing seeds, mealworms and vegetables to help keep them healthy.  She gives the chickens their feed in three separate meals. In the morning, she gives her flock of chickens 15 cups of feed.  In the afternoon, she gives her chickens another 25 cups of feed.  How many cups of feed does she need to give her chickens in the final meal of the day if the size of Wendi's flock is 20 chickens?",
+      "gold": "20",
+      "pred": "20",
+      "ok": true,
+      "output": "<think>\nOkay, let's see. Wendi feeds her chickens three cups of mixed feed each day. She gives them three separate meals. The problem says she gives 15 cups in the morning, 25 cups in the afternoon, and then we need to find out how many cups are given in the final meal. The size of her flock is 20 chickens. Hmm, so first, I need to figure out how many cups per chicken per meal, then multiply by the number of chickens and the number of meals. Let me break it down step by step.\n\nFirst, each chicken gets three cups of feed. So, if there are 20 chickens, then total feed per chicken is 3 cups. But "
+    }
+  ],
+  "env": {
+    "device": "mps",
+    "torch": "2.11.0"
+  },
+  "adapter": null
+}

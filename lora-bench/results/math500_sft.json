@@ -1,0 +1,1415 @@
+{
+  "accuracy": 0.265,
+  "n": 200,
+  "tokens_per_sec": 26.26590752171904,
+  "wall_seconds": 2636.649807082984,
+  "peak_memory_mb": 1178.06298828125,
+  "samples": [
+    {
+      "question": "Convert the point $(0,3)$ in rectangular coordinates to polar coordinates.  Enter your answer in the form $(r,\\theta),$ where $r > 0$ and $0 \\le \\theta < 2 \\pi.$",
+      "gold": "\\left( 3, \\frac{\\pi}{2} \\right)",
+      "pred": "\\frac{\\pi}{2}",
+      "ok": false,
+      "output": "<think>\nThe rectangular coordinates are $(0,3)$, so the distance from the origin is $r = \\sqrt{0^2 + 3^2} = \\sqrt{9} = \\boxed{3}$.\nThe angle $\\theta$ is measured from the positive x-axis counterclockwise to the point, so $\\theta = \\arctan\\left(\\frac{3}{0}\\right) = \\arctan(\\infty) = \\boxed{\\frac{\\pi}{2}}$.\n</think>\n\nThe answer is: #### 3, \u03c0/2"
+    },
+    {
+      "question": "Define\n\\[p = \\sum_{k = 1}^\\infty \\frac{1}{k^2} \\quad \\text{and} \\quad q = \\sum_{k = 1}^\\infty \\frac{1}{k^3}.\\]Find a way to write\n\\[\\sum_{j = 1}^\\infty \\sum_{k = 1}^\\infty \\frac{1}{(j + k)^3}\\]in terms of $p$ and $q.$",
+      "gold": "p - q",
+      "pred": "1",
+      "ok": false,
+      "output": "<think>\nWe know that $p = \\sum_{k = 1}^\\infty \\frac{1}{k^2} = \\frac{\\pi^2}{6}$ and $q = \\sum_{k = 1}^\\infty \\frac{1}{k^3} = \\frac{\\pi^3}{36}$.\nWe can write $p = \\sum_{k = 1}^\\infty \\frac{1}{k^2} = \\sum_{k = 1}^\\infty \\frac{1}{k^2} = \\sum_{k = 1}^\\infty \\frac{1}{k^2} = \\sum_{k = 1}^\\infty \\frac{1}{k^2} = \\sum_{k = 1}^\\infty \\frac{1}{k^2} = \\sum_{k = 1}^\\infty \\frac{1}{k^2} = \\sum_{k = 1}^\\infty \\frac{1}{k^2} = \\sum_{k = 1}^\\infty \\frac{1}{k^2} = \\sum_{k = 1}^\\infty \\frac{1}{k^2} = \\sum_{k = 1}^\\infty \\frac{1}{k^2} = \\sum_{k = 1}^\\infty \\frac{1}{k^2} = \\sum_{k = 1}^\\infty \\frac{1}{k^2} = \\sum_{k"
+    },
+    {
+      "question": "If $f(x) = \\frac{3x-2}{x-2}$, what is the value of $f(-2) +f(-1)+f(0)$? Express your answer as a common fraction.",
+      "gold": "\\frac{14}{3}",
+      "pred": "14/3",
+      "ok": true,
+      "output": "<think>\nWe can plug in the values for x into the function to find the values of f(-2), f(-1), and f(0).\nFor x = -2, f(-2) = (3*(-2) - 2)/(-2 - 2) = (-6 - 2)/(-4) = -8/-4 = 2\nFor x = -1, f(-1) = (3*(-1) - 2)/(-1 - 2) = (-3 - 2)/(-3) = -5/-3 = 5/3\nFor x = 0, f(0) = (3*0 - 2)/(0 - 2) = (-2)/(-2) = 1\nNow we add the values together: 2 + 5/3 + 1 = 3 + 5/3 = 14/3\n</think>\n\nThe answer is: #### 14/3"
+    },
+    {
+      "question": "How many positive whole-number divisors does 196 have?",
+      "gold": "9",
+      "pred": "9",
+      "ok": true,
+      "output": "<think>\nThe prime factorization of 196 is 2^2 * 7^2.\nThe number of positive whole-number divisors of 196 is (2+1)*(2+1) = <<2+1=3>>3*3 = <<3*3=9>>9\n</think>\n\nThe answer is: #### 9"
+    },
+    {
+      "question": "The results of a cross-country team's training run are graphed below. Which student has the greatest average speed? [asy]\nfor ( int i = 1; i <= 7; ++i )\n{\n\ndraw((i,0)--(i,6));\n}\n\nfor ( int i = 1; i <= 5; ++i )\n{\n\ndraw((0,i)--(8,i));\n}\ndraw((-0.5,0)--(8,0), linewidth(1));\ndraw((0,-0.5)--(0,6), linewidth(1));\nlabel(\"$O$\", (0,0), SW);\nlabel(scale(.85)*rotate(90)*\"distance\", (0, 3), W);\nlabel(scale(.85)*\"time\", (4, 0), S);\ndot((1.25, 4.5));\nlabel(scale(.85)*\"Evelyn\", (1.25, 4.8), N);\ndot((2.5, 2.2));\nlabel(scale(.85)*\"Briana\", (2.5, 2.2), S);\ndot((4.25,5.2));\nlabel(scale(.85)*\"Carla\", (4.25, 5.2), SE);\ndot((5.6, 2.8));\nlabel(scale(.85)*\"Debra\", (5.6, 2.8), N);\ndot((6.8, 1.4));\nlabel(scale(.85)*\"Angela\", (6.8, 1.4), E);\n[/asy]",
+      "gold": "\\text{Evelyn}",
+      "pred": "5",
+      "ok": false,
+      "output": "<think>\nThe first student has traveled 6 units in 4 units of time, so her average speed is 6/4 = <<6/4=1.5>>1.5 units of time per unit of distance.\nThe second student has traveled 5 units in 2 units of time, so her average speed is 5/2 = <<5/2=2.5>>2.5 units of time per unit of distance.\nThe third student has traveled 5 units in 1 unit of time, so her average speed is 5/1 = <<5/1=5>>5 units of time per unit of distance.\nThe fourth student has traveled 4 units in 1 unit of time, so her average speed is 4/1 = <<4/1=4>>4 units of time per unit of distance.\nThe fifth student has traveled 4 units i"
+    },
+    {
+      "question": null,
+      "gold": "42",
+      "pred": "126",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "27",
+      "pred": "1296",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "90^\\circ",
+      "pred": "98.5",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "3\\sqrt{13}",
+      "pred": "\\sqrt{117}",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "4",
+      "pred": "1",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "2220",
+      "pred": "2222222220",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{3}{56}",
+      "pred": "1",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "284",
+      "pred": "424",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "5",
+      "pred": "5",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\sqrt{51}",
+      "pred": "10",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "6 - 5i",
+      "pred": "0",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "-50",
+      "pred": "-100",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\pi",
+      "pred": "3.5",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "28",
+      "pred": "124",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "3",
+      "pred": "8",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "6+9i",
+      "pred": "39",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "13535",
+      "pred": "7",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "5",
+      "pred": "120",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "x=5",
+      "pred": "-11",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "10",
+      "pred": "10.33",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "1,-2",
+      "pred": "-118",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "144",
+      "pred": "4",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "78",
+      "pred": "222",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "-2 + 7i",
+      "pred": "-2+7i",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "225",
+      "pred": "8",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "52_8",
+      "pred": "32",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "11\\sqrt2",
+      "pred": "11\\sqrt{2}",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "720",
+      "pred": "720",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{243}{625}",
+      "pred": "\\frac{125}{15309}",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "-125",
+      "pred": "10x^7 - 1/32 x^{-15}",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "3",
+      "pred": "24",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "3, 5, 7",
+      "pred": "5",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "72",
+      "pred": "72",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "2000",
+      "pred": "2000",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "23",
+      "pred": "23",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "12",
+      "pred": "12",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "17",
+      "pred": "19",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "4",
+      "pred": "4",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "70 \\sqrt{2}",
+      "pred": "4100",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "1.25",
+      "pred": "\\frac{66}{4}",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "2",
+      "pred": null,
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "6",
+      "pred": "2",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "5",
+      "pred": "7",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{3}{2}",
+      "pred": "16/4",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "83",
+      "pred": "23",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "203",
+      "pred": "15.142857",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "x^5 - x^4 + x^3 - x^2 + x - 1",
+      "pred": "0",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "12",
+      "pred": "12",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "-\\frac{\\pi}{6}",
+      "pred": "-\u03c0/6",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "0.15",
+      "pred": "0.15",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "3",
+      "pred": "4",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "11",
+      "pred": "11",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "16",
+      "pred": "-16",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "9901",
+      "pred": "9901",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "5",
+      "pred": "11",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "(6,31,-1)",
+      "pred": "3",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "-256",
+      "pred": "-256",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "4",
+      "pred": "7",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "10",
+      "pred": "2",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{35}{64}",
+      "pred": "2",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "1",
+      "pred": "1",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "x^3+3x-6",
+      "pred": "x^3 + 3x - 6",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "10",
+      "pred": "10\\%",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "46",
+      "pred": "81",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "-1",
+      "pred": "1",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "40_9",
+      "pred": "27",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "2516_8",
+      "pred": "1507",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "3",
+      "pred": "3",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{3\\sqrt{3}}{4}",
+      "pred": "3\u221a3/4",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\cot x",
+      "pred": "\\frac{1}{\\sin x \\cos x} - 1",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{11}{36}",
+      "pred": "5/6",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "0",
+      "pred": "0",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "4",
+      "pred": "4",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "(-2,1)",
+      "pred": "0",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "2",
+      "pred": "3",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "501",
+      "pred": "2",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "3",
+      "pred": "3",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{3}{2}",
+      "pred": "3.807",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "2",
+      "pred": "2",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "-1",
+      "pred": "4",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\sqrt{5}",
+      "pred": "2",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "240",
+      "pred": "240",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "1",
+      "pred": "1",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "2",
+      "pred": "1",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "21",
+      "pred": "3",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{3}{2}",
+      "pred": "15",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "1",
+      "pred": "1",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{448}{15625}",
+      "pred": "64/78125",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "33",
+      "pred": "7",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "80",
+      "pred": "2",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "-4",
+      "pred": "-\\frac{11}{3}",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "1 \\pm \\sqrt{19}",
+      "pred": "0",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\text{east}",
+      "pred": "1",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "2k+2",
+      "pred": "2k + 2",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\begin{pmatrix} -1/3 \\\\ 2/3 \\\\ 5/3 \\end{pmatrix}",
+      "pred": "\\begin{pmatrix} 1 \\\\ 1 - z \\\\ z \\end{pmatrix}",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "145^\\circ",
+      "pred": "72.5",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "850",
+      "pred": "1",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "(a+5)(b+2)",
+      "pred": "(a+5)(b+2)",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "(3,4]",
+      "pred": "1/2 - 1/(2\u03bb)",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "40",
+      "pred": "18\u221a13 + 2\u221a29",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "29",
+      "pred": "10",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac43",
+      "pred": "0",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "9",
+      "pred": "1",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "2",
+      "pred": "2",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "120^\\circ",
+      "pred": "15",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "504",
+      "pred": "2",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "210",
+      "pred": "210",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "13",
+      "pred": "13",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "8000",
+      "pred": "9900",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "-5",
+      "pred": "-\\frac{329}{100}",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "1260",
+      "pred": "840",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "2",
+      "pred": "3",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "3",
+      "pred": "3",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "81",
+      "pred": "5",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "-9",
+      "pred": "-4",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\text{even}",
+      "pred": null,
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "6",
+      "pred": "6",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "9",
+      "pred": "25",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "8",
+      "pred": "8",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{11}{2}",
+      "pred": "2",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "-3",
+      "pred": "12.96",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "1+274i",
+      "pred": "1",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "4210_{5}",
+      "pred": "1000000",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "36",
+      "pred": "9",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{3840}{289}",
+      "pred": "\\sqrt{161}",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "13",
+      "pred": "0",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "8",
+      "pred": "2",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "4",
+      "pred": "4",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "120",
+      "pred": "180",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "16",
+      "pred": "\\frac{(x + 3)^2}{169} - \\frac{(y - 2)^2}{169} = 1",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "9",
+      "pred": "9",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "64",
+      "pred": "14",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "204_5",
+      "pred": "20.8",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{1}{3}",
+      "pred": "1",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "1",
+      "pred": "0",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "13",
+      "pred": "13",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "2",
+      "pred": "2",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "28800",
+      "pred": "30240",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "3 \\sqrt{5}",
+      "pred": "24",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "(15,-29)",
+      "pred": "15,-29",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "-2",
+      "pred": "81",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{\\sqrt{3}}{3}",
+      "pred": "1/\u221a3",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "16",
+      "pred": "16",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "11",
+      "pred": "11",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "49",
+      "pred": "12",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "1",
+      "pred": "1",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "144",
+      "pred": "25",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "8",
+      "pred": "48",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{2}{21}",
+      "pred": "1/9",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "2\\sqrt{113}",
+      "pred": "1",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{1}{4}",
+      "pred": "\\dfrac{1}{2}",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "30^\\circ",
+      "pred": "0.8",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac65",
+      "pred": "-\\frac{1}{5}",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "2107",
+      "pred": "147",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "3.21",
+      "pred": "1.6",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "18",
+      "pred": "18",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "6",
+      "pred": "6",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\dfrac{17}{50}",
+      "pred": "34",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "-\\frac{35}{9}",
+      "pred": "\\frac{1}{b^2} - a^2",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "-\\sqrt{3}",
+      "pred": "100",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{4}{9}",
+      "pred": "4/9",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{270}7\\text{ degrees}",
+      "pred": "-38.57",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "65",
+      "pred": "61.67",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "19",
+      "pred": "49",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "12",
+      "pred": "12.5",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "1736",
+      "pred": "-736",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{13}{15}",
+      "pred": "\\frac{1}{5} + \\frac{2}{3}",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "350",
+      "pred": "300",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "4",
+      "pred": "0",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "2",
+      "pred": "1",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "3",
+      "pred": "12",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": ".0000672",
+      "pred": "0.0000672",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "30^\\circ",
+      "pred": "2",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "60",
+      "pred": "12.25",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "5x - 7y + 11z + 4 = 0",
+      "pred": "11x + 0y + 35z + 35 = 0",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "3",
+      "pred": "6",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{\\sqrt{3}}{3}",
+      "pred": "\\frac{1}{3}",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "1251",
+      "pred": "2",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "23",
+      "pred": "13",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "(2,\\infty)",
+      "pred": null,
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "1",
+      "pred": "1",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "7",
+      "pred": "24",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "7",
+      "pred": "6",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "6",
+      "pred": "1",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "160",
+      "pred": "2.5",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{13}{18}",
+      "pred": "1/36",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "0",
+      "pred": "0",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "30",
+      "pred": "16",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "4",
+      "pred": "1",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "\\frac{1}{4}",
+      "pred": "6",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "24",
+      "pred": "0",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "1600",
+      "pred": "1600",
+      "ok": true,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "6",
+      "pred": "12",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "10,\\!080",
+      "pred": "80640",
+      "ok": false,
+      "output": null
+    },
+    {
+      "question": null,
+      "gold": "17",
+      "pred": "16",
+      "ok": false,
+      "output": null
+    }
+  ],
+  "env": {
+    "device": "mps",
+    "torch": "2.11.0"
+  },
+  "adapter": "./runs/qwen3_06b_sft_gsm8k/final",
+  "task": "MATH-500"
+}

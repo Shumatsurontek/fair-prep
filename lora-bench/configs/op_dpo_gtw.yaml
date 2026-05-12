@@ -1,0 +1,49 @@
+# OnPolicy-DPO-GTW custom trainer config (research prototype).
+# Inherits from base.yaml; uses GSM8K train split as prompt source (no offline pref dataset).
+
+trainer: op_dpo_gtw
+
+dataset:
+  name: "openai/gsm8k"
+  train_split: "train"
+  max_train_samples: 200            # pool of prompts to cycle through
+
+generation:
+  num_generations: 4                # G — set 2 for MPS smoke test
+  max_new_tokens: 384
+  temperature: 0.8
+  top_p: 0.9
+
+reward:
+  type: "gsm8k_exact_match"
+
+loss_weights:
+  dpo_sigmoid: 1.0
+  token_dpo:   0.5
+  sft:         0.3
+  kl:          0.05                  # extra KL (DPO already has implicit one via β)
+
+beta:
+  schedule: "cosine"                 # "cosine" | "constant"
+  beta_0:   0.2
+  beta_min: 0.02
+
+replay_buffer:
+  enabled: true
+  size: 256
+  inject_prob: 0.1
+
+token_weight_floor: 0.05             # avoid w=0 killing all signal
+
+train:
+  max_steps: 100                     # smoke: 10; real: 200-500
+  prompt_batch_size: 2               # prompts processed per step
+  learning_rate: 3.0e-6
+  warmup_steps: 5
+  weight_decay: 0.0
+  max_grad_norm: 0.5
+  save_every: 50
+  log_every: 1
+
+sft_checkpoint: "./runs/qwen3_06b_sft_gsm8k/final"
+run_name: "qwen3_06b_op_dpo_gtw"

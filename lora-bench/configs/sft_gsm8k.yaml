@@ -1,0 +1,44 @@
+# SFT LoRA on GSM8K
+# Inherits from base.yaml — fields here override base.
+
+dataset:
+  name: "openai/gsm8k"
+  config: "main"
+  train_split: "train"
+  eval_split: "test"
+  prompt_template: "qwen_chat"
+  max_train_samples: null           # null = all (~7473). Set lower for faster runs.
+  max_eval_samples: 100             # used at inference time
+  eval_holdout: 200                 # carved from train tail for in-training eval
+
+train:
+  num_train_epochs: 1               # 1 epoch suffit GSM8K, avoid divergence
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 4    # effective batch = 16
+  learning_rate: 1.0e-4             # was 2e-4 → exploded around step 720; lowered
+  lr_scheduler_type: "cosine"
+  warmup_steps: 50
+  weight_decay: 0.0
+  max_grad_norm: 0.5                # tighter clip vs 1.0
+  optim: "adamw_torch"
+  logging_steps: 20
+  eval_strategy: "steps"
+  eval_steps: 100
+  save_strategy: "steps"
+  save_steps: 100
+  save_total_limit: 2
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+  bf16: true                         # auto-disabled on MPS
+  fp16: false
+  report_to: "tensorboard"
+  packing: false
+  gradient_checkpointing: false      # set true if OOM (slower 30%)
+
+early_stopping:
+  patience: 3                        # stop after 3 eval rounds w/o improvement
+  threshold: 0.0
+
+run_name: "qwen3_06b_sft_gsm8k"
