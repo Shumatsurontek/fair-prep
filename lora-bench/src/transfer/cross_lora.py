@@ -17,7 +17,7 @@ from pathlib import Path
 import torch
 from peft import LoraConfig, PeftModel
 from safetensors.torch import save_file
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 from ..core.hooks import collect_activations
 
@@ -115,19 +115,21 @@ def transfer_adapter(
 
     prompts = load_calib_prompts(calib_path, n_calib)
 
-    # Load student first to read its config (layer count) cheaply.
-    student = AutoModelForCausalLM.from_pretrained(
-        student_name, trust_remote_code=True, dtype=torch.bfloat16
-    ).to(device)
-    L_s = student.config.num_hidden_layers
-
-    teacher_cfg_only = AutoModelForCausalLM.from_pretrained(
-        teacher_name, trust_remote_code=True, dtype=torch.bfloat16
-    )
-    L_t = teacher_cfg_only.config.num_hidden_layers
-    del teacher_cfg_only
-
+    # Read layer counts from config (JSON only — no model weights loaded).
+    L_s = AutoConfig.from_pretrained(student_name, trust_remote_code=True).num_hidden_layers
+    L_t = AutoConfig.from_pretrained(teacher_name, trust_remote_code=True).num_hidden_layers
     layer_map = _build_layer_map(L_s, L_t)
+
+    # T4 (Turing) lacks bf16 Tensor Cores → use fp16 (faster).
+    dtype = (torch.bfloat16
+             if device == "cuda" and torch.cuda.is_bf16_supported()
+             else torch.float16 if device == "cuda" else torch.float32)
+    print(f"[transfer] dtype={dtype}")
+
+    # Now load student model.
+    student = AutoModelForCausalLM.from_pretrained(
+        student_name, trust_remote_code=True, dtype=dtype
+    ).to(device)
     teacher_layers_used = set(layer_map.values())
     print(f"[layer-map] student L={L_s} → teacher L={L_t}  ({len(teacher_layers_used)} unique teacher layers)")
 
@@ -142,7 +144,7 @@ def transfer_adapter(
         torch.cuda.empty_cache()
 
     teacher = AutoModelForCausalLM.from_pretrained(
-        teacher_name, trust_remote_code=True, dtype=torch.bfloat16
+        teacher_name, trust_remote_code=True, dtype=dtype
     ).to(device)
     teacher_peft = PeftModel.from_pretrained(teacher, adapter_path)
     # Only hook teacher layers we actually need.
