@@ -58,12 +58,15 @@ def collect_activations(
     batch_size: int = 4,
 ) -> dict[str, tuple[torch.Tensor, torch.Tensor]]:
     """Run prompts through model; return {module_name: (X_in, Y_out)} on CPU."""
+    from tqdm import tqdm
+
     store = ActivationStore()
     handles = register_hooks(model, target_names, store)
     model.eval()
     try:
         with torch.no_grad():
-            for i in range(0, len(prompts), batch_size):
+            bar = tqdm(range(0, len(prompts), batch_size), desc="calib forward")
+            for i in bar:
                 batch = prompts[i : i + batch_size]
                 enc = tokenizer(
                     batch, return_tensors="pt", padding=True,

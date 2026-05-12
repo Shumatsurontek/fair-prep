@@ -169,9 +169,11 @@ def transfer_adapter(
 
     # Pair student modules to teacher modules via layer_map + leaf name.
     # Student name = "model.layers.{j}.<...>.<leaf>".  Map to teacher_i = layer_map[j].
+    from tqdm import tqdm
     errs: dict[str, float] = {}
     out_state: dict[str, torch.Tensor] = {}
-    for s_name in acts_s:
+    print(f"[ols-solve] projecting {len(acts_s)} student modules…")
+    for s_name in tqdm(list(acts_s), desc="ols solve"):
         j = _layer_idx(s_name)
         leaf = _module_leaf(s_name)
         if j is None or j not in layer_map:
