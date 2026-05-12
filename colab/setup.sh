@@ -41,17 +41,21 @@ echo "[setup] colab=$IS_COLAB"
 
 if [[ "$IS_COLAB" == "1" ]]; then
     echo "[setup] installing core deps into Colab system Python (preserves torch+CUDA)"
-    uv pip install --system --no-deps -r <(python - <<'PY'
-import tomllib, pathlib
-p = pathlib.Path("pyproject.toml")
-data = tomllib.loads(p.read_text())
-for d in data["project"]["dependencies"]:
-    if d.split(">=")[0].split("==")[0].split("<")[0].strip() in {"torch"}:
-        continue            # keep Colab pre-installed torch+CUDA
-    print(d)
-PY
-)
-    uv pip install --system peft trl datasets accelerate transformers safetensors
+    # Pin to versions compatible with Colab's torch 2.10.x.
+    # transformers >=5.x / trl >=1.x require torch >= 2.11 (cpp ext skipped otherwise).
+    uv pip install --system \
+        "transformers>=4.45,<5" \
+        "trl>=0.11,<1" \
+        "peft>=0.13,<0.18" \
+        "datasets>=3.0" \
+        "accelerate>=1.0" \
+        "safetensors>=0.4" \
+        "scipy>=1.13" \
+        "scikit-learn>=1.5" \
+        "typer>=0.12" \
+        "rich>=13" \
+        "pyyaml>=6" \
+        "tqdm>=4.66"
 else
     echo "[setup] installing project deps via uv sync"
     uv sync --no-dev
